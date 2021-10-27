@@ -1,12 +1,7 @@
 import numpy
-from PIL import Image
-
 
 class Model:
     def __init__(self, filename):
-        """
-        https://en.wikipedia.org/wiki/Wavefront_.obj_file#Vertex_normal_indices
-        """
         self.vertices = []
         self.uv_vertices = []#贴图
         self.uv_indices = []

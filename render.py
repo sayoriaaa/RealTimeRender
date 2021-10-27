@@ -5,7 +5,6 @@ Created on Mon Oct 18 22:24:17 2021
 @author: sayori
 """
 import numpy as np
-import math
 import canvas
 from canvas import triangle
 from numpy import array as ar
