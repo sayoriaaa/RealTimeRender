@@ -8,7 +8,7 @@ class Model:
         self.indices = []#对应哪三个顶点构成一个面，从1开始
 
 
-        with open(filename) as f:
+        with open(filename,encoding='utf-8') as f:
             for line in f:
                 if line.startswith("v "):
                     x, y, z = [float(d) for d in line.strip("v").strip().split(" ")]
