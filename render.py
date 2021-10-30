@@ -9,6 +9,7 @@ import canvas
 from drawkit import triangle
 from numpy import array as ar
 import model
+import time
 
             
 def to_homo(x):
@@ -40,43 +41,57 @@ def z_buffer(screen_vertices, world_vertices,model, canvas):
     for i in range(900):
         for j in range(900):
             buff[i][j]=1000#初始化深度无限远
+
     for i in model.indices:
-        scr_tri=ar([screen_vertices[idx-1] for idx in i])
-        
-        dots,buff=triangle(scr_tri[0],scr_tri[1],scr_tri[2],buff).get_dots()
-        for dot in dots:
-            canvas.img.putpixel(dot, (255,0,0,255))
-    
+        scr_tri=ar([screen_vertices[idx-1] for idx in i]) 
+        buff=triangle(scr_tri[0],scr_tri[1],scr_tri[2],buff).get_buffer()
+
     for i in range(900):
         for j in range(900):
             if buff[i][j]!=1000:
-                canvas.img.putpixel((i,j), (255,0,0,round(55+(buff[i][j]-18)*200)))
+                canvas.img.putpixel((i,j), (255,0,0,round(buff[i][j]*150/255+50)))
             
                
 def render(model,height=900,width=900,filename=None):
     
-    Mper=perspective_transformation(0.5,-0.5,-0.5,0.5,3,1000)
-    Mcam=camera_transformation(ar([-8,-5,9]), ar([0,0,0]))
+    Mper=perspective_transformation(0.5,-0.5,-0.5,0.5,4,1000)
+    Mcam=camera_transformation(ar([-4,-6,20]), ar([0,0,0]))
     Mvp=viewport_transformation()
        
     world_vertices=model.vertices
     M=np.dot(np.dot(Mvp,Mper),Mcam)#rendering pipeline P153/p141(7.1) 暂时忽略mmodeling transformation,to be added later
     
     screen_vertices=[]
-
+    
+    z_record=[]#把任意的深度范围映射到0-255,或者理解成对深度信息的采样
     for v in model.vertices:
+        _,_,z,_=np.dot(M,v)
+        z_record.append(z)
+    z_max=max(z_record)
+    z_min=min(z_record)
+    z_update=[round((i-z_min)/(z_max-z_min)*255) for i in z_record]
+       
+    for i,v in enumerate(model.vertices):
         x,y,z,w=np.dot(M,v)
-        screen_vertices.append([int(x/w),int(y/w),int(z)])
+        
+        screen_vertices.append([round(x/w),round(y/w),z_update[i]])
   
     return screen_vertices,world_vertices
 
-bk=canvas.canvas()
-bk.put_yellow()
-m=model.Model("model/axe.obj")
-screen_vertices,world_vertices=render(m)
-z_buffer(screen_vertices,world_vertices,m,bk)
-bk.img.show()
-bk.img.save("results/third.png")
+if __name__=="__main__":
+    m=model.Model("model/box.obj")
+    screen_vertices,world_vertices=render(m)
+    bk=canvas.canvas()
+    bk.put_yellow()
+    
+    start=time.perf_counter()
+    z_buffer(screen_vertices,world_vertices,m,bk)
+    print("渲染时间："+str(time.perf_counter()-start)+"s")
+    
+    bk.img.show()
+    bk.img.save("results/cube_2.png")
+    
+
 
     
 

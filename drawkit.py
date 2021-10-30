@@ -24,18 +24,25 @@ class triangle:
         self.z1=a[2]
         self.z2=b[2]
         self.z3=c[2]
+        self.z_ave=(a[2]+b[2]+c[2])/3
         
         self.buff=buff
           
-    def get_dots(self):
-        dots=[]
+    def get_buffer(self):
+        
         for i in range(self.xmin,self.xmax):
             for j in range(self.ymin,self.ymax):
                 vec=np.array([i,j])
-                if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:
-                    alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#333333333333333333333333
-                    depth=alpha*self.z1+beta*self.z2+(1-alpha-beta)*self.z3
+                if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
+                    depth=self.get_depth_screen(i,j)
+
+                    if i>=900 or j>=900 or i<0 or j<0:    break
                     if depth<self.buff[i][j]:
-                        dots.append((i,j))
                         self.buff[i][j]=depth
-        return dots,self.buff
+        return self.buff
+    
+    def get_depth_screen(self,i,j):
+        alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
+        return alpha*self.z1+beta*self.z2+(1-alpha-beta)*self.z3
+    def get_depth_appro(self):
+        return self.z_ave
