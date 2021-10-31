@@ -49,7 +49,7 @@ def z_buffer(screen_vertices, world_vertices,model, canvas):
     for i in range(900):
         for j in range(900):
             if buff[i][j]!=1000:
-                canvas.img.putpixel((i,j), (255,0,0,round(buff[i][j]*150/255+50)))
+                canvas.img.putpixel((i,j), (18,184,214,round(buff[i][j]*150/255+50)))
             
                
 def render(model,height=900,width=900,filename=None):
