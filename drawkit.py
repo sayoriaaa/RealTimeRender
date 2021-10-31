@@ -6,9 +6,13 @@ Created on Thu Oct 28 10:36:19 2021
 """
 import numpy as np
 from numpy import array as ar
+import math
+
+def unitize(x):
+    return x/np.linalg.norm(x)
 
 class triangle:
-    def __init__(self,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3),buff=np.zeros((900,900))):#分别传入屏幕坐标的三个点和buffer
+    def __init__(self,i,law,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3),z_buff=np.zeros((900,900)),f_buff=np.zeros((900,900))):#分别传入屏幕坐标的三个点和z_buffer,f_buff透明度
         self.a=ar([a[0],a[1]])
         self.b=ar([b[0],b[1]])
         self.c=ar([c[0],c[1]])
@@ -26,23 +30,79 @@ class triangle:
         self.z3=c[2]
         self.z_ave=(a[2]+b[2]+c[2])/3
         
-        self.buff=buff
+        self.z_buff=z_buff
+        self.f_buff=f_buff
+        self.ori=i
+        self.law=law#当前面的单位法向量
           
-    def get_buffer(self):
+    def get_buffer(self,mode=1):
         
-        for i in range(self.xmin,self.xmax):
-            for j in range(self.ymin,self.ymax):
-                vec=np.array([i,j])
-                if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
-                    depth=self.get_depth_screen(i,j)
-
-                    if i>=900 or j>=900 or i<0 or j<0:    break
-                    if depth<self.buff[i][j]:
-                        self.buff[i][j]=depth
-        return self.buff
+        if mode==0:#默认原点处的水平光
+            for i in range(self.xmin,self.xmax):
+                for j in range(self.ymin,self.ymax):
+                    vec=np.array([i,j])
+                    if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
+                        depth=self.get_depth_screen(i,j)
+            
+                        if i>=900 or j>=900 or i<0 or j<0:    break
+                        if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
+                            self.z_buff[i][j]=depth
+                            self.f_buff[i][j]=round(self.z_buff[i][j]*150/255+50)
+            return self.z_buff,self.f_buff
+        if mode==1:#Blinn-Phong模型(Blinn模型，性能开销小)
+            self.get_vertice_light()
+            for i in range(self.xmin,self.xmax):
+                for j in range(self.ymin,self.ymax):
+                    vec=np.array([i,j])
+                    if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
+                        depth=self.get_depth_screen(i,j)
+            
+                        if i>=900 or j>=900 or i<0 or j<0:    break
+                        if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
+                            self.z_buff[i][j]=depth
+                            ambient_light=50#10为环境光亮度
+                            spect_light=(self.get_light_screen(i,j))*200
+                            self.f_buff[i][j]=255-ambient_light-spect_light
+                            
+                    
+            return self.z_buff,self.f_buff
+            
+            
     
     def get_depth_screen(self,i,j):
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
         return alpha*self.z1+beta*self.z2+(1-alpha-beta)*self.z3
     def get_depth_appro(self):
         return self.z_ave
+    
+    
+    def get_vertice_light(self):
+        light_position=ar([1,2,1])
+        camera_position=([-4,-6,20])
+        law=self.law
+        vec1=light_position-self.ori[0]+camera_position-self.ori[0]
+        vec1=unitize(vec1)
+        vec2=light_position-self.ori[1]+camera_position-self.ori[1]
+        vec2=unitize(vec2)
+        vec3=light_position-self.ori[2]+camera_position-self.ori[2]
+        vec3=unitize(vec3)
+        light1=math.pow(np.dot(vec1,law),101)#不能是偶数不然没法判断背面
+        if light1<0:
+            light1=0#好蠢啊有没有类似clamp的
+        light2=math.pow(np.dot(vec2,law),101)#不能是偶数不然没法判断背面
+        if light2<0:
+            light2=0
+        light3=math.pow(np.dot(vec3,law),101)#不能是偶数不然没法判断背面
+        if light3<0:
+            light3=0
+        self.light1=light1
+        self.light2=light2
+        self.light3=light3
+        
+    def get_light_screen(self,i,j):
+        alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
+        return alpha*self.light1+beta*self.light2+(1-alpha-beta)*self.light3
+            
+        
+        
+        

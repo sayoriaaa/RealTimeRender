@@ -12,8 +12,10 @@ import model
 import time
 
             
-def to_homo(x):
-    a=ar([x[0],x[1],x[2],1],dtype=float)
+def to_ori(x):
+    a=[]
+    for i in x:
+        a.append(ar([i[0],i[1],i[2]]))
     return a
 
 def unitize(x):
@@ -36,32 +38,30 @@ def viewport_transformation(height=900,width=900):#P142视口变换
     Mvp=ar([[0.5*width,0,0,0.5*width-0.5],[0,0.5*height,0,0.5*height-0.5],[0,0,1,0],[0,0,0,1]])
     return Mvp
 
-def z_buffer(screen_vertices, world_vertices,model, canvas):
-    buff=np.zeros((900,900))
+def get_buff(screen_vertices,model, canvas):
+    
+    z_buff=np.zeros((900,900))
+    f_buff=np.zeros((900,900))
     for i in range(900):
         for j in range(900):
-            buff[i][j]=1000#初始化深度无限远
+            z_buff[i][j]=1000#初始化深度无限远
 
-    for i in model.indices:
+    for count, i in enumerate(model.indices):
         scr_tri=ar([screen_vertices[idx-1] for idx in i]) 
-        buff=triangle(scr_tri[0],scr_tri[1],scr_tri[2],buff).get_buffer()
+        ori_tri=ar([model.vertices[idx-1] for idx in i]) 
+        ori_tri=to_ori(ori_tri)
+        law=model.vn_vertices[count]
+        z_buff,f_buff=triangle(ori_tri,law,scr_tri[0],scr_tri[1],scr_tri[2],z_buff,f_buff).get_buffer()
 
-    for i in range(900):
-        for j in range(900):
-            if buff[i][j]!=1000:
-                canvas.img.putpixel((i,j), (18,184,214,round(buff[i][j]*150/255+50)))
+    return f_buff,z_buff
             
                
 def render(model,height=900,width=900,filename=None):
     
     Mper=perspective_transformation(0.5,-0.5,-0.5,0.5,4,1000)
-    Mcam=camera_transformation(ar([-4,-6,20]), ar([0,0,0]))
+    Mcam=camera_transformation(ar([-4,-6,20]), ar([0,0,0]))#这里调整时注意更新drawkit.blinnphong中的camera_position
     Mvp=viewport_transformation()
-       
-    world_vertices=model.vertices
     M=np.dot(np.dot(Mvp,Mper),Mcam)#rendering pipeline P153/p141(7.1) 暂时忽略mmodeling transformation,to be added later
-    
-    screen_vertices=[]
     
     z_record=[]#把任意的深度范围映射到0-255,或者理解成对深度信息的采样
     for v in model.vertices:
@@ -70,26 +70,33 @@ def render(model,height=900,width=900,filename=None):
     z_max=max(z_record)
     z_min=min(z_record)
     z_update=[round((i-z_min)/(z_max-z_min)*255) for i in z_record]
-       
+    
+    screen_vertices=[]
     for i,v in enumerate(model.vertices):
         x,y,z,w=np.dot(M,v)
-        
         screen_vertices.append([round(x/w),round(y/w),z_update[i]])
   
-    return screen_vertices,world_vertices
+    return screen_vertices
+
+def shade(f_buffer,z_buffer,canvas):
+    for i in range(900):
+        for j in range(900):
+            if z_buffer[i][j]!=1000:
+                canvas.img.putpixel((i,j), (18,184,214,int(f_buffer[i][j])))
 
 if __name__=="__main__":
     m=model.Model("model/box.obj")
-    screen_vertices,world_vertices=render(m)
+    screen_vertices=render(m)
     bk=canvas.canvas()
     bk.put_yellow()
     
     start=time.perf_counter()
-    z_buffer(screen_vertices,world_vertices,m,bk)
+    f_buff,z_buff=get_buff(screen_vertices,m,bk)
+    shade(f_buff,z_buff,bk)
     print("渲染时间："+str(time.perf_counter()-start)+"s")
     
     bk.img.show()
-    bk.img.save("results/cube_2.png")
+    bk.img.save("results/cube+.png")
     
 
 
