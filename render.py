@@ -6,6 +6,7 @@ Created on Mon Oct 18 22:24:17 2021
 """
 import numpy as np
 import canvas
+import drawkit
 from drawkit import triangle
 from numpy import array as ar
 import model
@@ -58,25 +59,17 @@ def get_buff(screen_vertices,model, canvas):
                
 def render(model,height=900,width=900,filename=None):
     
-    Mper=perspective_transformation(0.5,-0.5,-0.5,0.5,4,1000)
-    Mcam=camera_transformation(ar([-4,-6,20]), ar([0,0,0]))#这里调整时注意更新drawkit.blinnphong中的camera_position
+    Mper=perspective_transformation(0.5,-0.5,-0.5,0.5,0.4,1000)
+    Mcam=camera_transformation(ar([4,4,10]), ar([0,0,0]))#这里调整时注意更新drawkit.blinnphong中的camera_position
     Mvp=viewport_transformation()
     M=np.dot(np.dot(Mvp,Mper),Mcam)#rendering pipeline P153/p141(7.1) 暂时忽略mmodeling transformation,to be added later
     
-    z_record=[]#把任意的深度范围映射到0-255,或者理解成对深度信息的采样
-    for v in model.vertices:
-        _,_,z,_=np.dot(M,v)
-        z_record.append(z)
-    z_max=max(z_record)
-    z_min=min(z_record)
-    z_update=[round((i-z_min)/(z_max-z_min)*255) for i in z_record]
-    
+    z_update=drawkit.process_z(model, M)#把z映射到一个较大范围的整数区间，默认0-1000
     screen_vertices=[]
     for i,v in enumerate(model.vertices):
         x,y,z,w=np.dot(M,v)
         screen_vertices.append([round(x/w),round(y/w),z_update[i]])
-  
-    return screen_vertices
+    return screen_vertices,M
 
 def shade(f_buffer,z_buffer,canvas):
     for i in range(900):
@@ -86,9 +79,12 @@ def shade(f_buffer,z_buffer,canvas):
 
 if __name__=="__main__":
     m=model.Model("model/box.obj")
-    screen_vertices=render(m)
+    screen_vertices,M=render(m)#返回屏幕空间的顶点坐标，总的变换矩阵，z轴最小值
+    print(M)
     bk=canvas.canvas()
     bk.put_yellow()
+    bk.draw_grid(M)
+    bk.draw_xyz(M)
     
     start=time.perf_counter()
     f_buff,z_buff=get_buff(screen_vertices,m,bk)
@@ -96,7 +92,7 @@ if __name__=="__main__":
     print("渲染时间："+str(time.perf_counter()-start)+"s")
     
     bk.img.show()
-    bk.img.save("results/cube+.png")
+    bk.img.save("results/cube++.png")
     
 
 
