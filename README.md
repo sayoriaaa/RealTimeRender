@@ -19,4 +19,7 @@ v1.0.2    进行了光栅化部分代码的重构，实现了基于Blinn-Phong�
 21/11/4
 v1.0.2.1    增加坐标轴，网格显示功能
 
+21/11/5
+v1.0.2.1    改进了之前对shader认识不完善的部分，实现lambertian和blinn-phong shaing
+
 
