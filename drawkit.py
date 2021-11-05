@@ -49,7 +49,7 @@ class triangle:
         self.ori=i
         self.law=law#当前面的单位法向量
           
-    def get_buffer(self,mode=0):
+    def get_buffer(self,mode=2):
         
         if mode==0:#默认原点处的水平光
             for i in range(self.xmin,self.xmax):
@@ -78,10 +78,9 @@ class triangle:
                         if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
                             self.z_buff[i][j]=depth
                             para_cos=self.get_light_screen(i, j, 1)#光源位置在get_vertice_light设定
-                            self.f_buff[i][j]=ar([.8,.3,0])*para_cos*kd*255
+                            self.f_buff[i][j]=ar([.8,.3,0])*para_cos*kd*255#*255 之前的是intensity
             return self.z_buff,self.f_buff
         if mode==2:#Blinn-Phong Shading(Blinn模型，性能开销小)
-            self.get_vertice_light()
             for i in range(self.xmin,self.xmax):
                 for j in range(self.ymin,self.ymax):
                     vec=np.array([i,j])
@@ -91,9 +90,11 @@ class triangle:
                         if i>=900 or j>=900 or i<0 or j<0:    break
                         if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
                             self.z_buff[i][j]=depth
-                            ambient_light=50#10为环境光亮度
-                            spect_light=(self.get_light_screen(i,j))*200
-                            self.f_buff[i][j]=255-ambient_light-spect_light
+                            diffuse_light_cos=(self.get_light_screen(i,j,1))
+                            spect_light_cos=(self.get_light_screen(i,j,101))
+                            
+                            
+                            self.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
                             
                     
             return self.z_buff,self.f_buff
