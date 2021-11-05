@@ -15,7 +15,7 @@ from numpy import array as ar
 class canvas:
             
     def __init__(self,filename=None,width=900,height=900):
-        self.img=Image.new("RGBA",(width,height),(0,0,0,0))
+        self.img=Image.new("RGB",(width,height),(0,0,0))
         
     def draw(self,dots,color):
         if isinstance(color,str): color=ImageColor.getrgb(color)
@@ -26,7 +26,7 @@ class canvas:
     def put_yellow(self):      
         for i in range(900):
             for j in range(900):
-                self.img.putpixel((j,i),(125,255,0,int(100+100*i/900)))
+                self.img.putpixel((j,i),(125,255,0))
         
     def put_default_tri(self):
         a=np.array([random.randint(0,400),random.randint(0,400),1])
@@ -49,7 +49,7 @@ class canvas:
             dots=grid_line.draw_line()
             for dot in dots:
                 if dot[0]>=0 and dot[1]>=0 and dot[0]<900 and dot[1]<900:
-                    self.img.putpixel((dot[0],dot[1]), (0,0,0,255))
+                    self.img.putpixel((dot[0],dot[1]), (0,0,0))
         
         set_a=[ar([10,0,i,1]) for i in range(-10,11)]
         set_b=[ar([-10,0,i,1]) for i in range(-10,11)]
@@ -62,12 +62,12 @@ class canvas:
             dots=grid_line.draw_line()
             for dot in dots:
                 if dot[0]>=0 and dot[1]>=0 and dot[0]<900 and dot[1]<900:
-                    self.img.putpixel((dot[0],dot[1]), (0,0,255,255))
+                    self.img.putpixel((dot[0],dot[1]), (0,0,255))
                     
     def draw_xyz(self,M):
         set_a=[ar([0,0,0,1]),ar([0,0,0,1]),ar([0,0,0,1])]
         set_b=[ar([10,0,0,1]),ar([0,10,0,1]),ar([0,0,10,1])]
-        color=[(255,0,0,255),(0,255,0,255),(0,0,255,255)]
+        color=[(255,0,0),(0,255,0),(0,0,255)]
         for i,v in enumerate(set_a):
             print(set_a[i])
             start=np.dot(M, set_a[i])

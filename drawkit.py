@@ -26,7 +26,7 @@ def process_z(model,M,start=0,end=1000):
         
 
 class triangle:
-    def __init__(self,i,law,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3),z_buff=np.zeros((900,900)),f_buff=np.zeros((900,900))):#分别传入屏幕坐标的三个点和z_buffer,f_buff透明度
+    def __init__(self,i,law,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3),z_buff=np.zeros((900,900)),f_buff=ar([ar([[1,1,1] for i in range(900)]) for i in range(900)])):#分别传入屏幕坐标的三个点和z_buffer,f_buff[R,G,B]
         self.a=ar([a[0],a[1]])
         self.b=ar([b[0],b[1]])
         self.c=ar([c[0],c[1]])
@@ -61,9 +61,26 @@ class triangle:
                         if i>=900 or j>=900 or i<0 or j<0:    break
                         if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
                             self.z_buff[i][j]=depth
-                            self.f_buff[i][j]=round(self.z_buff[i][j]/5+50)
+                            self.f_buff[i][j][0]=0
+                            self.f_buff[i][j][1]=0
+                            self.f_buff[i][j][2]=255-self.z_buff[i][j]/5
             return self.z_buff,self.f_buff
-        if mode==1:#Blinn-Phong模型(Blinn模型，性能开销小)
+        
+        if mode==1:#Lambertian Shading
+            kd=1
+            for i in range(self.xmin,self.xmax):
+                for j in range(self.ymin,self.ymax):
+                    vec=np.array([i,j])
+                    if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
+                        depth=self.get_depth_screen(i,j)
+            
+                        if i>=900 or j>=900 or i<0 or j<0:    break
+                        if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
+                            self.z_buff[i][j]=depth
+                            para_cos=self.get_light_screen(i, j, 1)#光源位置在get_vertice_light设定
+                            self.f_buff[i][j]=ar([.8,.3,0])*para_cos*kd*255
+            return self.z_buff,self.f_buff
+        if mode==2:#Blinn-Phong Shading(Blinn模型，性能开销小)
             self.get_vertice_light()
             for i in range(self.xmin,self.xmax):
                 for j in range(self.ymin,self.ymax):
@@ -90,9 +107,9 @@ class triangle:
         return self.z_ave
     
     
-    def get_vertice_light(self):
-        light_position=ar([4,6,-10])
-        camera_position=([4,6,-10])
+    def get_vertice_light(self,n):#参考取值lambertian n=1,blinn-spec n=101,
+        light_position=ar([2,6,10])
+        camera_position=([4,4,10])
         law=self.law
         vec1=light_position-self.ori[0]+camera_position-self.ori[0]
         vec1=unitize(vec1)
@@ -100,22 +117,15 @@ class triangle:
         vec2=unitize(vec2)
         vec3=light_position-self.ori[2]+camera_position-self.ori[2]
         vec3=unitize(vec3)
-        light1=math.pow(np.dot(vec1,law),101)#不能是偶数不然没法判断背面
-        if light1<0:
-            light1=0#好蠢啊有没有类似clamp的
-        light2=math.pow(np.dot(vec2,law),101)#不能是偶数不然没法判断背面
-        if light2<0:
-            light2=0
-        light3=math.pow(np.dot(vec3,law),101)#不能是偶数不然没法判断背面
-        if light3<0:
-            light3=0
-        self.light1=light1
-        self.light2=light2
-        self.light3=light3
+        light1=max(math.pow(np.dot(vec1,law),n),0)#不能是偶数不然没法判断背面
+        light2=max(math.pow(np.dot(vec2,law),n),0)
+        light3=max(math.pow(np.dot(vec3,law),n),0)
+        return light1,light2,light3
         
-    def get_light_screen(self,i,j):
+    def get_light_screen(self,i,j,n):
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
-        return alpha*self.light1+beta*self.light2+(1-alpha-beta)*self.light3
+        light1,light2,light3=self.get_vertice_light(n)
+        return alpha*light1+beta*light2+(1-alpha-beta)*light3
 
            
         

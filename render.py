@@ -42,7 +42,7 @@ def viewport_transformation(height=900,width=900):#P142视口变换
 def get_buff(screen_vertices,model, canvas):
     
     z_buff=np.zeros((900,900))
-    f_buff=np.zeros((900,900))
+    f_buff=ar([ar([[1,1,1] for i in range(900)]) for i in range(900)])
     for i in range(900):
         for j in range(900):
             z_buff[i][j]=1000#初始化深度无限远
@@ -75,10 +75,10 @@ def shade(f_buffer,z_buffer,canvas):
     for i in range(900):
         for j in range(900):
             if z_buffer[i][j]!=1000:
-                canvas.img.putpixel((i,j), (18,184,214,int(f_buffer[i][j])))
+                canvas.img.putpixel((i,j), (f_buffer[i][j][0],f_buffer[i][j][1],f_buffer[i][j][2]))
 
 if __name__=="__main__":
-    m=model.Model("model/box.obj")
+    m=model.Model("model/sph.obj")
     screen_vertices,M=render(m)#返回屏幕空间的顶点坐标，总的变换矩阵，z轴最小值
     print(M)
     bk=canvas.canvas()
@@ -92,7 +92,7 @@ if __name__=="__main__":
     print("渲染时间："+str(time.perf_counter()-start)+"s")
     
     bk.img.show()
-    bk.img.save("results/cube++.png")
+    bk.img.save("results/sph.png")
     
 
 
