@@ -94,6 +94,11 @@ class triangle:
                             spect_light_cos=(self.get_light_screen(i,j,101))
                             
                             
+
+
+
+
+
                             self.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
                             
                     
@@ -174,7 +179,20 @@ class line:
                         x_start+=1
                     
         return dots
-        
     
+
+        
+class plane:#这里的平面是给光追用的，不用考虑光栅化的东西
+    def __init__(self,position=ar([0,-1,0]),norm=ar([0,1,0])):
+        self.pos=position
+        self.norm=norm
+        
+    def get_color(self,point):#这里先用默认参数写了,先不管光源夹角
+        if (point[0]//1+point[2]//1)%2==0:
+            return ar([0,0,0])
+        else:
+            return ar([255,255,255])
+        
+        
         
         
