@@ -189,9 +189,9 @@ class plane:#这里的平面是给光追用的，不用考虑光栅化的东西
         
     def get_color(self,point):#这里先用默认参数写了,先不管光源夹角
         if (point[0]//1+point[2]//1)%2==0:
-            return ar([0,0,0])
+            return ar([1,0,0])
         else:
-            return ar([255,255,255])
+            return ar([0,0,1])
         
         
         

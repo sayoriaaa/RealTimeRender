@@ -12,6 +12,7 @@ from numpy import array as ar
 import model
 import time
 
+
 import tqdm
 
             
@@ -23,6 +24,7 @@ def to_ori(x):
 
 def unitize(x):
     return x/np.linalg.norm(x)
+   
 
 def camera_transformation(position,target,up=ar([0,1,0])):#P145
     gaze=unitize(target-position)#上手默认gaze单位向量，其实可以直接反一下但是习惯了
@@ -101,7 +103,7 @@ def intersect_tri_time(tri,direction):#判断是否有交点，若有返回camer
     det_gama=np.linalg.det(matrix_gama)
     
     
-    if det_A<1e-6:
+    if abs(det_A)<1e-6:
         return 10000
     else:
         beta=det_beta/det_A
@@ -116,21 +118,22 @@ def intersect_tri_time(tri,direction):#判断是否有交点，若有返回camer
 def intersect_tri(model,direction):
     min_t=10000
     camera=ar([2,2,5])
-    direction=unitize(direction)
+    object_tri_norm=ar([1.,1.,1.])
     
     for count,i in enumerate(model.indices):
         tri=ar([model.vertices[idx-1] for idx in i])
         normal=model.vn_vertices[count]
-        t=intersect_tri_time(tri, direction)
+        t=intersect_tri_time(tri,direction)
+
         if t<min_t and t>0:#找到最小获得插值
             min_t=t
             object_tri=tri
             object_tri_norm=normal
             
     plane=drawkit.plane()
-    if direction[1]<1e-6:#与屏幕平行
+    if abs(direction[1])<1e-6:#与屏幕平行
         if min_t==10000:#又没有和三角形相交
-            return ar([0,0,0])
+            return ar([0,25,0])
         else:
             return ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255
         
@@ -139,11 +142,13 @@ def intersect_tri(model,direction):
         plane_point=camera+plane_t*direction
         if min_t==10000:
             if plane_t>0:
-                return plane.get_color(plane_point)
+                intensity=plane.get_color(plane_point)
+                return abs(intensity*np.dot(plane.norm,direction)*255)
             else: return ar([0,0,0])
         else:
-            if plane_t>0 and plane_t<min_t:
-                return plane.get_color(plane_point)
+            if plane_t>0 and plane_t<min_t-1e-4:#防止因浮点数存在误差而导致在相同深度的情况下平面和物体混杂,确保物体先射到
+                intensity=plane.get_color(plane_point)
+                return abs(intensity*np.dot(plane.norm,direction)*255)
             else:
                 return ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255
                 
@@ -152,7 +157,7 @@ def intersect_tri(model,direction):
 def intersect_plane(model,canvas):#测试用，只绘制平面
     height=900
     width=900
-    camera=ar([10,10,10])
+    camera=ar([2,2,5])
     target=ar([0,0,0])
     up=ar([0,1,0])
     gaze=unitize(target-camera)
@@ -161,25 +166,26 @@ def intersect_plane(model,canvas):#测试用，只绘制平面
     d=300.
     canvas_center=camera+d*gaze
     canvas_leftdown=canvas_center-height/2*v-width/2*u
-    direction=ar([ar([[1,1,1] for i in range(900)]) for i in range(900)])
+    direction=ar([ar([[1.,1.,1.] for i in range(900)]) for i in range(900)])#初始化用浮点数！！！
     
     plane=drawkit.plane()
     
     for i in tqdm.tqdm(range(height)):
         for j in range(width):
-            direction[i][j]=canvas_leftdown+i*v+j*u-camera#确立了像素数量的光线方向
+            vec_canvas_to_object=canvas_leftdown+i*v+j*u-camera#确立了像素数量的光线方向
+            direction[i][j]=unitize(vec_canvas_to_object)
             
             plane=drawkit.plane()
-            if direction[i][j][1]<1e-6:
-                canvas.img.putpixel((j,i),(0,0,0))
+            if abs(direction[i][j][1])<1e-9:
+                canvas.img.putpixel((j,i),(0,25,0))
                 continue#近似平行的情况，警告了处理一下，时间就减半了LOL
                 
             plane_t=(plane.pos[1]-camera[1])/direction[i][j][1]
             plane_point=camera+plane_t*direction[i][j]
             
-            pixel_color=plane.get_color(plane_point)
-            pixel_color=pixel_color*np.dot(ar([0,1,0]), direction[i][j])
-            canvas.img.putpixel((j,i),(int(pixel_color[0]),int(pixel_color[1]),int(pixel_color[2])))
+            intensity=plane.get_color(plane_point)
+            pixel_color=abs(intensity*np.dot(ar([0,1,0]), direction[i][j])*255)
+            canvas.img.putpixel((899-j,899-i),(int(pixel_color[0]),int(pixel_color[1]),int(pixel_color[2])))
             #process_rate=(height*i+j)/(height*width)*100
             #print("已完成："+str(process_rate)+"%")
     
@@ -196,16 +202,17 @@ def ray_tracing(model,canvas):
     gaze=unitize(target-camera)
     u=unitize(np.cross(up,-1*gaze))
     v=np.cross(-1*gaze,u)
-    d=100.
+    d=300.
     canvas_center=camera+d*gaze
     canvas_leftdown=canvas_center-height/2*v-width/2*u
-    direction=ar([ar([[1,1,1] for i in range(900)]) for i in range(900)])
+    direction=ar([ar([[1.,1.,1.] for i in range(900)]) for i in range(900)])
     for i in tqdm.tqdm(range(height)):
         for j in range(width):
-            direction[i][j]=canvas_leftdown+i*v+j*u-camera#确立了像素数量的光线方向
+            vec_canvas_to_object=canvas_leftdown+i*v+j*u-camera#确立了像素数量的光线方向
+            direction[i][j]=unitize(vec_canvas_to_object)
             
             pixel_color=intersect_tri(model, direction[i][j])
-            canvas.img.putpixel((i,j),(int(pixel_color[0]),int(pixel_color[1]),int(pixel_color[2])))
+            canvas.img.putpixel((899-j,899-i),(int(pixel_color[0]),int(pixel_color[1]),int(pixel_color[2])))
             
     
 ########################################################################################
@@ -233,10 +240,11 @@ def ray_trace_main():
    
     start=time.perf_counter()
     ray_tracing(m, bk)
+    #intersect_plane(m, bk)
     print("渲染时间："+str(time.perf_counter()-start)+"s")
     
     bk.img.show()
-    bk.img.save("results/ray_trace_4.png")
+    bk.img.save("results/ray_trace_9.png")
     
     
     
