@@ -102,8 +102,8 @@ def intersect_tri_time(tri,direction):#判断是否有交点，若有返回camer
     det_beta=np.linalg.det(matrix_beta)
     det_gama=np.linalg.det(matrix_gama)
     
-    
-    if abs(det_A)<1e-6:
+
+    if abs(det_A)<1e-6 :
         return 10000
     else:
         beta=det_beta/det_A
@@ -123,19 +123,19 @@ def intersect_tri(model,direction):
     for count,i in enumerate(model.indices):
         tri=ar([model.vertices[idx-1] for idx in i])
         normal=model.vn_vertices[count]
-        t=intersect_tri_time(tri,direction)
+        t=intersect_tri_time(tri,direction)      
 
         if t<min_t and t>0:#找到最小获得插值
             min_t=t
             object_tri=tri
             object_tri_norm=normal
-            
+    
     plane=drawkit.plane()
-    if abs(direction[1])<1e-6:#与屏幕平行
+    if direction[1]>-1*1e-6:#与屏幕平行
         if min_t==10000:#又没有和三角形相交
             return ar([0,25,0])
         else:
-            return ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255
+            return abs(ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255)
         
     else:
         plane_t=(plane.pos[1]-camera[1])/direction[1]
@@ -150,7 +150,7 @@ def intersect_tri(model,direction):
                 intensity=plane.get_color(plane_point)
                 return abs(intensity*np.dot(plane.norm,direction)*255)
             else:
-                return ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255
+                return abs(ar([.8,.3,0])*np.dot(direction,object_tri_norm)*255)
                 
         
         
@@ -244,7 +244,7 @@ def ray_trace_main():
     print("渲染时间："+str(time.perf_counter()-start)+"s")
     
     bk.img.show()
-    bk.img.save("results/ray_trace_9.png")
+    bk.img.save("results/ray_trace_11.png")
     
     
     
