@@ -8,7 +8,7 @@ import numpy as np
 from numpy import array as ar
 import math
 
-def unitize(x):
+def normalize(x):
     return x/np.linalg.norm(x)
 
 def swap(a,b):
@@ -22,11 +22,22 @@ def process_z(model,M,start=0,end=1000):
     z_max=max(z_record)
     z_min=min(z_record)
     z_update=[round((i-z_min)/(z_max-z_min)*end+start) for i in z_record] 
-    return z_update      
-        
+    return z_update  
 
-class triangle:
-    def __init__(self,i,law,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3),z_buff=np.zeros((900,900)),f_buff=ar([ar([[1,1,1] for i in range(900)]) for i in range(900)])):#分别传入屏幕坐标的三个点和z_buffer,f_buff[R,G,B]
+
+    
+class Object:
+    camera=ar([4,4,10]) 
+    light=ar([2,6,10])
+    z_buff=None#在scene会重写
+    f_buff=None
+    height=None
+    width=None
+
+class Triangle(Object):    
+    kd=1
+    
+    def __init__(self,i,norm,a=np.zeros(3),b=np.zeros(3),c=np.zeros(3)):#分别传入屏幕坐标的三个点
         self.a=ar([a[0],a[1]])
         self.b=ar([b[0],b[1]])
         self.c=ar([c[0],c[1]])
@@ -44,14 +55,29 @@ class triangle:
         self.z3=c[2]
         self.z_ave=(a[2]+b[2]+c[2])/3
         
-        self.z_buff=z_buff
-        self.f_buff=f_buff
         self.ori=i
-        self.law=law#当前面的单位法向量
+        self.norm=norm
+        self.vertice_light=None#效率优化
           
-    def get_buffer(self,mode=2):
+    def get_buffer_blinn(self):
+        for i in range(self.xmin,self.xmax):
+            for j in range(self.ymin,self.ymax):
+                vec=np.array([i,j])
+                if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
+                    depth=self.get_depth_screen(i,j)
         
-        if mode==0:#默认原点处的水平光
+                    if i>=900 or j>=900 or i<0 or j<0:    break
+                    if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
+                        self.z_buff[i][j]=depth
+                        diffuse_light_cos=(self.get_light_screen(i,j,1))
+                        spect_light_cos=(self.get_light_screen(i,j,101))
+                        
+                        self.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
+                            
+                    
+            return self.z_buff,self.f_buff
+        '''    
+       if mode==0:#默认原点处的水平光
             for i in range(self.xmin,self.xmax):
                 for j in range(self.ymin,self.ymax):
                     vec=np.array([i,j])
@@ -79,33 +105,8 @@ class triangle:
                             self.z_buff[i][j]=depth
                             para_cos=self.get_light_screen(i, j, 1)#光源位置在get_vertice_light设定
                             self.f_buff[i][j]=ar([.8,.3,0])*para_cos*kd*255#*255 之前的是intensity
-            return self.z_buff,self.f_buff
-        if mode==2:#Blinn-Phong Shading(Blinn模型，性能开销小)
-            for i in range(self.xmin,self.xmax):
-                for j in range(self.ymin,self.ymax):
-                    vec=np.array([i,j])
-                    if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
-                        depth=self.get_depth_screen(i,j)
-            
-                        if i>=900 or j>=900 or i<0 or j<0:    break
-                        if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
-                            self.z_buff[i][j]=depth
-                            diffuse_light_cos=(self.get_light_screen(i,j,1))
-                            spect_light_cos=(self.get_light_screen(i,j,101))
-                            
-                            
-
-
-
-
-
-                            self.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
-                            
-                    
-            return self.z_buff,self.f_buff
-            
-            
-    
+            return self.z_buff,self.f_buff     
+    '''
     def get_depth_screen(self,i,j):
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
         return alpha*self.z1+beta*self.z2+(1-alpha-beta)*self.z3
@@ -113,29 +114,21 @@ class triangle:
         return self.z_ave
     
     
-    def get_vertice_light(self,n):#参考取值lambertian n=1,blinn-spec n=101,
-        light_position=ar([2,6,10])
-        camera_position=([4,4,10])
-        law=self.law
-        vec1=light_position-self.ori[0]+camera_position-self.ori[0]
-        vec1=unitize(vec1)
-        vec2=light_position-self.ori[1]+camera_position-self.ori[1]
-        vec2=unitize(vec2)
-        vec3=light_position-self.ori[2]+camera_position-self.ori[2]
-        vec3=unitize(vec3)
-        light1=max(math.pow(np.dot(vec1,law),n),0)#不能是偶数不然没法判断背面
-        light2=max(math.pow(np.dot(vec2,law),n),0)
-        light3=max(math.pow(np.dot(vec3,law),n),0)
-        return light1,light2,light3
+    def get_vertice_light(self,n):#参考取值lambertian n=1,blinn-spec n=101,不能是偶数不然没法判断背面
+        vertice_light=[]
+        for i in range(3):
+            l=normalize(Object.light+Object.camera-2*self.ori[i])
+            vertice_light.append(max(math.pow(np.dot(l,self.norm),n),0))
+        return vertice_light
         
-    def get_light_screen(self,i,j,n):
+    def get_screen_interpolation(self,i,j,n):
+        if np.any(self.vertice_light==None):    self.vertice_light=self.get_vertice_light(n)
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
-        light1,light2,light3=self.get_vertice_light(n)
-        return alpha*light1+beta*light2+(1-alpha-beta)*light3
+        return alpha*self.vertice_light[0]+beta*self.vertice_light[1]+(1-alpha-beta)*self.vertice_light[3]
 
            
         
-class line:
+class Line:
     def __init__(self,a,b):#这里已经是屏幕空间的点了  
         if not b[0]>a[0]:  
             a,b=swap(a,b)#确保Xa在左边
@@ -182,7 +175,7 @@ class line:
     
 
         
-class plane:#这里的平面是给光追用的，不用考虑光栅化的东西
+class Plane:#这里的平面是给光追用的，不用考虑光栅化的东西
     def __init__(self,position=ar([0,-1,0]),norm=ar([0,1,0])):
         self.pos=position
         self.norm=norm
