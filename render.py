@@ -109,7 +109,7 @@ def initial_scene(width=600,height=400,save_path="results/res1.png"):
     sc=Scene(width=width,height=height,save_path=save_path)
     return sc
 
-@SSAA
+
 def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"):
     m=model.Model(model_path)
     sc=initial_scene(width=width,height=height,save_path=save_path)   
@@ -123,7 +123,7 @@ def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"
     
     
 if __name__=="__main__":
-    pipline(600,400,save_path="results/res3.png",model_path="model/box.obj")
+    pipline(600,400,save_path="results/res5.png",model_path="model/box.obj")
     
 
         
