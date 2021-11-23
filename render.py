@@ -12,7 +12,31 @@ from drawkit import Object
 from numpy import array as ar
 import model
 import tqdm
+from PIL import Image
 
+def img_ave(img,i,j):
+    ave=[]
+    tu1=img.getpixel((int(i*2),int(j*2)))
+    tu2=img.getpixel((int(i*2+1),int(j*2)))
+    tu3=img.getpixel((int(i*2),int(j*2+1)))
+    tu4=img.getpixel((int(i*2+1),int(j*2+1)))
+    
+    for i in range(3):
+        ave.append(int((tu1[i]+tu2[i]+tu3[i]+tu4[i])/4))
+    return tuple(ave)
+    
+    
+
+def SSAA(func):
+    def wrapper(*args,**kargs):
+        new_args=(args[0]*2,args[1]*2)
+        final_img=Image.new("RGB",(args[0],args[1]))
+        img=func(*new_args,**kargs)
+        for i in range(args[0]):
+            for j in range(args[1]):
+                final_img.putpixel((i,j),img_ave(img,i,j))
+        final_img.save(kargs['save_path'])
+    return wrapper
 
 def normalize(x):
     return x/np.linalg.norm(x)
@@ -66,6 +90,7 @@ def get_transform_matrix(scene):
 
 
 def shade(f_buffer,z_buffer,scene,triangle_set):
+    print(scene.width)
     for i in triangle_set:
         i.update_buffer()
         
@@ -74,24 +99,27 @@ def shade(f_buffer,z_buffer,scene,triangle_set):
             if z_buffer[i][j]!=np.inf:
                 scene.img.putpixel((i,j), (f_buffer[i][j][0],f_buffer[i][j][1],f_buffer[i][j][2]))
 
+def initial_scene(width=600,height=400,save_path="results/res1.png"):
+    sc=Scene(width=width,height=height,save_path=save_path)
+    return sc
 
-def pipline():
-    m=model.Model("model/box.obj")
-    sc=Scene(width=600,height=400,save_path="results/sph.png")   
+def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"):
+    m=model.Model(model_path)
+    sc=initial_scene(width=width,height=height,save_path=save_path)   
     M=get_transform_matrix(sc)#返回屏幕空间的顶点坐标，总的变换矩阵，z轴最小值
     sc.draw_xyz(M)
     
-    triangle_set=load_model(m,sc,M)     
+    triangle_set=load_model(m,sc,M)  
     shade(Object.f_buff,Object.z_buff,sc,triangle_set)  
-    sc.show()   
+    sc.show() 
+    return sc.img
     
     
 if __name__=="__main__":
-    pipline()
+    pipline(600,400,save_path="results/res1.png",model_path="model/box.obj")
     
 
-
-    
+        
 
 
     

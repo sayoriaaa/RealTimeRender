@@ -23,6 +23,7 @@ class Scene:
         initialize_Object(width,height)
         self.camera=Object.camera
         self.light=Object.light
+        self.background=background
         
         
     def draw(self,dots,color):
@@ -55,6 +56,7 @@ class Scene:
     def show(self):
         self.img.show()
         self.save()
+        
         
 '''       
     def draw_grid(self,M):
@@ -91,6 +93,10 @@ def initialize_Object(width,height):
     Object.f_buff=ar([ar([[1,1,1] for i in range(height)]) for i in range(width)])#这里小心了
     Object.height=height
     Object.width=width 
+    
+
+    
+    
       
 
 if __name__=="__main__":
