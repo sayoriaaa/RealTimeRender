@@ -43,12 +43,31 @@ class Model:
                     z.append(i)
                 self.vn_vertices=z#等待换写法
                 
+        if filename.find('.obj')!=-1:
+            filename=filename.replace('.obj','.mtl')
+            print(filename)
+            with open(filename,encoding='utf-8') as f:
+                for line in f:
+                    if line.startswith("Ka "):
+                        self.Ka=[float(d) for d in line.strip("Ka").strip().split(" ")]
+                    elif line.startswith("Ks "):
+                        self.Ks=[float(d) for d in line.strip("Ks").strip().split(" ")]
+                    elif line.startswith("Kd "):
+                        self.Kd=[float(d) for d in line.strip("Kd").strip().split(" ")]
+                    elif line.startswith("illum "):
+                        self.illum=float(line.strip("illum").strip())
+
+                
                     
                     
 
 if __name__=="__main__":
     m=Model("model/box.obj")
-    
+    print(m.Ka)
+    print(m.Ks)
+    print(m.Kd)
+    print(m.illum)
+''' 
     print("indices:")
     for i,j in enumerate(m.indices):
         print(i,j)
@@ -73,5 +92,5 @@ if __name__=="__main__":
     for i,j in enumerate(m.vn_vertices):
         print(i,j)
         if i>=20:   break
-        
+'''      
     

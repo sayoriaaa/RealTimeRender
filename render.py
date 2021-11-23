@@ -65,7 +65,7 @@ def viewport_transformation(height=900,width=900):#P142视口变换
     Mvp=ar([[0.5*width,0,0,0.5*width-0.5],[0,0.5*height,0,0.5*height-0.5],[0,0,1,0],[0,0,0,1]])
     return Mvp
 
-def load_model(model, scene, M):
+def load_model(model, scene, M,load_material=False):
     
     screen_vertices=[]
     real_vertices=[]#把齐次坐标转回来
@@ -83,12 +83,18 @@ def load_model(model, scene, M):
         single_triangle=Triangle(ori_tri,norm,scr_tri[0],scr_tri[1],scr_tri[2])
         triangle_set.append(single_triangle)
         
+    if load_material:
+        Triangle.Ka=ar(model.Ka)/model.illum
+        Triangle.Kd=ar(model.Kd)/model.illum
+        Triangle.Ks=ar(model.Ks)/model.illum
+        
+        
     return triangle_set
 
             
                
 def get_transform_matrix(scene):   
-    Mper=perspective_transformation(n=0.4,f=1000)
+    Mper=perspective_transformation(n=0.8,f=100)
     Mcam=camera_transformation(scene.camera)
     Mvp=viewport_transformation(width=scene.width,height=scene.height)
     M=np.dot(np.dot(Mvp,Mper),Mcam)#rendering pipeline P153/p141(7.1)    
@@ -97,33 +103,34 @@ def get_transform_matrix(scene):
 
 def shade(f_buffer,z_buffer,scene,triangle_set):
     print(scene.width)
-    for i in triangle_set:
+    for i in tqdm.tqdm(triangle_set):
         i.update_buffer()
         
-    for i in tqdm.tqdm(range(scene.width)):
+    for i in range(scene.width):
         for j in range(scene.height):
             if z_buffer[i][j]!=np.inf:
                 scene.img.putpixel((i,j), (f_buffer[i][j][0],f_buffer[i][j][1],f_buffer[i][j][2]))
 
 def initial_scene(width=600,height=400,save_path="results/res1.png"):
+    Triangle.mode=1
     sc=Scene(width=width,height=height,save_path=save_path)
     return sc
 
-
+#@SSAA
 def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"):
     m=model.Model(model_path)
     sc=initial_scene(width=width,height=height,save_path=save_path)   
     M=get_transform_matrix(sc)#返回屏幕空间的顶点坐标，总的变换矩阵，z轴最小值
     sc.draw_xyz(M)
     
-    triangle_set=load_model(m,sc,M)  
+    triangle_set=load_model(m,sc,M,load_material=True)  
     shade(Object.f_buff,Object.z_buff,sc,triangle_set)  
     sc.show()
     return sc.img
     
     
 if __name__=="__main__":
-    pipline(600,400,save_path="results/res5.png",model_path="model/box.obj")
+    pipline(600,600,save_path="results/res9.png",model_path="model/box.obj")
     
 
         

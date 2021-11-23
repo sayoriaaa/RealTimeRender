@@ -25,6 +25,10 @@ class Object:
 class Triangle(Object):    
     kd=1
     mode=1
+    p=50
+    Kd=ar([.8,.3,.4])
+    Ka=ar([.2,.2,.2])
+    Ks=ar([.6,.6,.6])
     
     def __init__(self,i,norm,vertice1=np.zeros(3),vertice2=np.zeros(3),vertice3=np.zeros(3)):#分别传入屏幕坐标的三个点
         if Triangle.mode==0:
@@ -44,36 +48,11 @@ class Triangle(Object):
                         if depth<Object.z_buff[i][j]:
                             Object.z_buff[i][j]=depth
                             diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                            spect_light_cos=(self.get_screen_interpolation(i,j,101))      
-                            Object.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
+                            spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p))      
+                            Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
         
         elif Triangle.mode==1:
-            b_continue=0
-            b_dots=self.line2.draw_line()
-            for count,i in enumerate(range(self.a[0],self.b[0])):
-                b_continue=count#b线要记录结束点位置继续
-                dots=self.line1.draw_line()
-                start=min(dots[count][1],b_dots[count][1])
-                end=max(dots[count][1],b_dots[count][1])
-                for j in range(start,end):
-                    depth=self.get_depth_screen(i,j)
-                    if depth<Object.z_buff[i][j]:
-                            Object.z_buff[i][j]=depth
-                            diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                            spect_light_cos=(self.get_screen_interpolation(i,j,101))
-                            Object.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
-                
-            for count,i in enumerate(range(self.b[0],self.c[0])):
-                dots=self.line3.draw_line()
-                start=min(dots[count][1],b_dots[count+b_continue][1])
-                end=max(dots[count][1],b_dots[count+b_continue][1])
-                for j in range(start,end):
-                    depth=self.get_depth_screen(i,j)
-                    if depth<Object.z_buff[i][j]:
-                            Object.z_buff[i][j]=depth
-                            diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                            spect_light_cos=(self.get_screen_interpolation(i,j,101))
-                            Object.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
+            self.optimize_update_buffer()
             
                             
 
@@ -133,6 +112,34 @@ class Triangle(Object):
         self.line3=Line((b[0],b[1]),(c[0],c[1]))
         self.ori=i
         self.norm=norm
+        
+    def optimize_update_buffer(self):
+        b_continue=0
+        b_dots=self.line2.draw_line()
+        for count,i in enumerate(range(self.a[0],self.b[0])):
+            b_continue=count#b线要记录结束点位置继续
+            dots=self.line1.draw_line()
+            start=min(dots[count][1],b_dots[count][1])
+            end=max(dots[count][1],b_dots[count][1])
+            for j in range(start,end):
+                depth=self.get_depth_screen(i,j)
+                if depth<Object.z_buff[i][j]:
+                        Object.z_buff[i][j]=depth
+                        diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
+                        spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p)) 
+                        Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+            
+        for count,i in enumerate(range(self.b[0],self.c[0])):
+            dots=self.line3.draw_line()
+            start=min(dots[count][1],b_dots[count+b_continue][1])
+            end=max(dots[count][1],b_dots[count+b_continue][1])
+            for j in range(start,end):
+                depth=self.get_depth_screen(i,j)
+                if depth<Object.z_buff[i][j]:
+                        Object.z_buff[i][j]=depth
+                        diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
+                        spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p)) 
+                        Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
         
         
 class Line:
