@@ -21,6 +21,8 @@ class Scene:
         self.height=height
         self.img=Image.new("RGB",(width,height),background)
         initialize_Object(width,height)
+        self.camera=Object.camera
+        self.light=Object.light
         
         
     def draw(self,dots,color):
@@ -85,10 +87,11 @@ class Scene:
 ''' 
         
 def initialize_Object(width,height):
-    Object.z_buff=np.zeros((width,height))
-    Object.f_buff=ar([ar([[1,1,1] for i in range(width)]) for i in range(height)])
+    Object.z_buff=np.full((width,height),np.inf)
+    Object.f_buff=ar([ar([[1,1,1] for i in range(height)]) for i in range(width)])#这里小心了
     Object.height=height
-    Object.width=width        
+    Object.width=width 
+      
 
 if __name__=="__main__":
     k=Scene()

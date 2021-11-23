@@ -14,7 +14,7 @@ class Model:
             for line in f:
                 if line.startswith("v "):
                     x, y, z = [float(d) for d in line.strip("v").strip().split(" ")]
-                    self.vertices.append(numpy.array([x, y, z, 1]))
+                    self.vertices.append(numpy.array([x, y, z, 1.]))
                     
                 elif line.startswith("vt "):
                     u, v = [float(d) for d in line.strip("vt").strip().split(" ")]

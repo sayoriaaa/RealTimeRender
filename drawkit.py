@@ -13,18 +13,6 @@ def normalize(x):
 
 def swap(a,b):
     return b,a
-
-def process_z(model,M,start=0,end=1000):
-    z_record=[]#把任意的深度范围映射到start-end,或者理解成对深度信息的采样
-    for v in model.vertices:
-        _,_,z,_=np.dot(M,v)
-        z_record.append(z)
-    z_max=max(z_record)
-    z_min=min(z_record)
-    z_update=[round((i-z_min)/(z_max-z_min)*end+start) for i in z_record] 
-    return z_update  
-
-
     
 class Object:
     camera=ar([4,4,10]) 
@@ -59,23 +47,21 @@ class Triangle(Object):
         self.norm=norm
         self.vertice_light=None#效率优化
           
-    def get_buffer_blinn(self):
+    def update_buffer(self):
         for i in range(self.xmin,self.xmax):
             for j in range(self.ymin,self.ymax):
                 vec=np.array([i,j])
                 if np.cross(vec-self.a,self.vec2)>0 and np.cross(vec-self.b,self.vec3)>0 and np.cross(vec-self.c,self.vec1)>0:        
                     depth=self.get_depth_screen(i,j)
         
-                    if i>=900 or j>=900 or i<0 or j<0:    break
-                    if depth<self.z_buff[i][j]:#深度不等于亮度，两个都要保存
-                        self.z_buff[i][j]=depth
-                        diffuse_light_cos=(self.get_light_screen(i,j,1))
-                        spect_light_cos=(self.get_light_screen(i,j,101))
+                    if i>=Object.width or j>=Object.height or i<0 or j<0:    break
+                    if depth<Object.z_buff[i][j]:
+                        Object.z_buff[i][j]=depth
+                        diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
+                        spect_light_cos=(self.get_screen_interpolation(i,j,101))
                         
-                        self.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
+                        Object.f_buff[i][j]=ar([.8,.3,0])*(0.2*diffuse_light_cos+0.6*spect_light_cos+0.2)*255
                             
-                    
-            return self.z_buff,self.f_buff
         '''    
        if mode==0:#默认原点处的水平光
             for i in range(self.xmin,self.xmax):
@@ -122,10 +108,10 @@ class Triangle(Object):
         return vertice_light
         
     def get_screen_interpolation(self,i,j,n):
-        if np.any(self.vertice_light==None):    self.vertice_light=self.get_vertice_light(n)
+        vertice_light=self.get_vertice_light(n)
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
-        return alpha*self.vertice_light[0]+beta*self.vertice_light[1]+(1-alpha-beta)*self.vertice_light[3]
-
+        return alpha*vertice_light[0]+beta*vertice_light[1]+(1-alpha-beta)*vertice_light[2]
+    
            
         
 class Line:
