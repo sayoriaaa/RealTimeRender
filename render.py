@@ -5,6 +5,7 @@ Created on Mon Oct 18 22:24:17 2021
 @author: sayori
 """
 import numpy as np
+import math
 from canvas import Scene
 import drawkit
 from drawkit import Triangle
@@ -14,27 +15,32 @@ import model
 import tqdm
 from PIL import Image
 
-def img_ave(img,i,j):
+def img_ave(img,i,j,LEVEL,LEVEL_sqrt):
     ave=[]
-    tu1=img.getpixel((int(i*2),int(j*2)))
-    tu2=img.getpixel((int(i*2+1),int(j*2)))
-    tu3=img.getpixel((int(i*2),int(j*2+1)))
-    tu4=img.getpixel((int(i*2+1),int(j*2+1)))
-    
+    total_pixel=[]
+    for column in range(LEVEL_sqrt):
+        for row in range(LEVEL_sqrt):
+            total_pixel.append(img.getpixel((int(i*LEVEL_sqrt+column),int(j*LEVEL_sqrt+row))))
+            
     for i in range(3):
-        ave.append(int((tu1[i]+tu2[i]+tu3[i]+tu4[i])/4))
+        RGB_AVE=0
+        for pixel in total_pixel:
+            RGB_AVE+=pixel[i]
+        ave.append(int(RGB_AVE/LEVEL))
     return tuple(ave)
     
     
 
 def SSAA(func):
     def wrapper(*args,**kargs):
-        new_args=(args[0]*2,args[1]*2)
+        LEVEL=4
+        LEVEL_sqrt=int(math.sqrt(LEVEL))
+        new_args=(args[0]*LEVEL_sqrt,args[1]*LEVEL_sqrt)
         final_img=Image.new("RGB",(args[0],args[1]))
         img=func(*new_args,**kargs)
         for i in range(args[0]):
             for j in range(args[1]):
-                final_img.putpixel((i,j),img_ave(img,i,j))
+                final_img.putpixel((i,j),img_ave(img,i,j,LEVEL,LEVEL_sqrt))
         final_img.save(kargs['save_path'])
     return wrapper
 
@@ -103,6 +109,7 @@ def initial_scene(width=600,height=400,save_path="results/res1.png"):
     sc=Scene(width=width,height=height,save_path=save_path)
     return sc
 
+@SSAA
 def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"):
     m=model.Model(model_path)
     sc=initial_scene(width=width,height=height,save_path=save_path)   
@@ -111,12 +118,12 @@ def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"
     
     triangle_set=load_model(m,sc,M)  
     shade(Object.f_buff,Object.z_buff,sc,triangle_set)  
-    sc.show() 
+    sc.show()
     return sc.img
     
     
 if __name__=="__main__":
-    pipline(600,400,save_path="results/res1.png",model_path="model/box.obj")
+    pipline(600,400,save_path="results/res3.png",model_path="model/box.obj")
     
 
         
