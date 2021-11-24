@@ -98,8 +98,7 @@ def load_model(model, scene, M,load_material=False,load_texture=False):
         Triangle.v=model.v
         Triangle.load_texture=True
         Triangle.uv_set=uv_set
-        
-        
+             
     return triangle_set,uv_set
 
             
@@ -110,7 +109,6 @@ def get_transform_matrix(scene):
     Mvp=viewport_transformation(width=scene.width,height=scene.height)
     M=np.dot(np.dot(Mvp,Mper),Mcam)#rendering pipeline P153/p141(7.1)    
     return M
-
 
 def shade(f_buffer,z_buffer,scene,triangle_set,uv_set):
     count=0
@@ -123,10 +121,19 @@ def shade(f_buffer,z_buffer,scene,triangle_set,uv_set):
             if z_buffer[i][j]!=np.inf:
                 scene.img.putpixel((i,j), (f_buffer[i][j][0],f_buffer[i][j][1],f_buffer[i][j][2]))
 
+
+
 def initial_scene(width=600,height=400,save_path="results/res1.png"):
+    """
+    Triangle.mode=0:向量叉乘
+    Triangle.mode=1：线包围
+    Triangle.mode=2：重心法
+    """
     Triangle.mode=0####################################################
     sc=Scene(width=width,height=height,save_path=save_path)
     return sc
+
+
 
 #@SSAA
 def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj",texture_name="model/barrel_side.png"):

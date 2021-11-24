@@ -47,7 +47,6 @@ class Model:
                 
         if filename.find('.obj')!=-1:
             filename=filename.replace('.obj','.mtl')
-            print(filename)
             with open(filename,encoding='utf-8') as f:
                 for line in f:
                     if line.startswith("Ka "):
@@ -62,7 +61,6 @@ class Model:
         if texture_name!=None:
             texture=Image.open(texture_name)
             u,v=texture.size
-            print(u,v)
             self.u=u-1
             self.v=v-1
             self.texture=texture
