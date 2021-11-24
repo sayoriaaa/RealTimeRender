@@ -98,7 +98,6 @@ class Triangle(Object):
         c=self.c
         alpha=(-1*(i-b[0])*(c[1]-b[1])+(j-b[1])*(c[0]-b[0]))/(-1*(a[0]-b[0])*(c[1]-b[1])+(a[1]-b[1])*(c[0]-b[0]))
         beta=(-1*(i-c[0])*(a[1]-c[1])+(j-c[1])*(a[0]-c[0]))/(-1*(b[0]-c[0])*(a[1]-c[1])+(b[1]-c[1])*(a[0]-c[0]))
-        print(alpha,beta)
         return alpha,beta
         
     def vector_cross_initial(self,i,norm,a,b,c):

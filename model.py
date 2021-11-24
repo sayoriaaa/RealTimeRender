@@ -47,22 +47,25 @@ class Model:
                 
         if filename.find('.obj')!=-1:
             filename=filename.replace('.obj','.mtl')
-            with open(filename,encoding='utf-8') as f:
-                for line in f:
-                    if line.startswith("Ka "):
-                        self.Ka=[float(d) for d in line.strip("Ka").strip().split(" ")]
-                    elif line.startswith("Ks "):
-                        self.Ks=[float(d) for d in line.strip("Ks").strip().split(" ")]
-                    elif line.startswith("Kd "):
-                        self.Kd=[float(d) for d in line.strip("Kd").strip().split(" ")]
-                    elif line.startswith("illum "):
-                        self.illum=float(line.strip("illum").strip())
+            try:
+                with open(filename,encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith("Ka "):
+                            self.Ka=[float(d) for d in line.strip("Ka").strip().split(" ")]
+                        elif line.startswith("Ks "):
+                            self.Ks=[float(d) for d in line.strip("Ks").strip().split(" ")]
+                        elif line.startswith("Kd "):
+                            self.Kd=[float(d) for d in line.strip("Kd").strip().split(" ")]
+                        elif line.startswith("illum "):
+                            self.illum=float(line.strip("illum").strip())
+            except FileNotFoundError:
+                print("无材质文件")
                         
         if texture_name!=None:
             texture=Image.open(texture_name)
             u,v=texture.size
-            self.u=u-1
-            self.v=v-1
+            self.u=u
+            self.v=v
             self.texture=texture
             #texture.show()
             
