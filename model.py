@@ -1,12 +1,14 @@
 import numpy
+from PIL import Image
 
 class Model:
-    def __init__(self, filename):
+    def __init__(self, filename, texture_name=None):
         self.vertices = []
         self.vn_vertices = []#法线
         self.uv_vertices = []#贴图
         self.uv_indices = []
         self.indices = []#对应哪三个顶点构成一个面，从1开始
+        self.texture_name=texture_name
         self.is_poly=False
 
 
@@ -56,18 +58,25 @@ class Model:
                         self.Kd=[float(d) for d in line.strip("Kd").strip().split(" ")]
                     elif line.startswith("illum "):
                         self.illum=float(line.strip("illum").strip())
+                        
+        if texture_name!=None:
+            texture=Image.open(texture_name)
+            u,v=texture.size
+            print(u,v)
+            self.u=u-1
+            self.v=v-1
+            self.texture=texture
+            #texture.show()
+            
 
                 
                     
                     
 
 if __name__=="__main__":
-    m=Model("model/box.obj")
-    print(m.Ka)
-    print(m.Ks)
-    print(m.Kd)
-    print(m.illum)
-''' 
+    m=Model("model/box.obj",texture_name="model/box.png")
+    
+ 
     print("indices:")
     for i,j in enumerate(m.indices):
         print(i,j)
@@ -77,20 +86,26 @@ if __name__=="__main__":
     for i,j in enumerate(m.vertices):
         print(i,j)
         if i>=20:   break
-        
+            
+    print("vn_vertices:")
+    for i,j in enumerate(m.vn_vertices):
+        print(i,j)
+        if i>=20:   break
+    
     print("uv_indices:")
     for i,j in enumerate(m.uv_indices):
         print(i,j)
         if i>=20:   break
-        
+    
     print("uv_vertices:")
     for i,j in enumerate(m.uv_vertices):
         print(i,j)
         if i>=20:   break
     
-    print("vn_vertices:")
-    for i,j in enumerate(m.vn_vertices):
-        print(i,j)
-        if i>=20:   break
-'''      
+'''
+    print(m.Ka)
+    print(m.Ks)
+    print(m.Kd)
+    print(m.illum)
+'''   
     

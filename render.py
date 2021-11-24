@@ -65,8 +65,8 @@ def viewport_transformation(height=900,width=900):#P142视口变换
     Mvp=ar([[0.5*width,0,0,0.5*width-0.5],[0,0.5*height,0,0.5*height-0.5],[0,0,1,0],[0,0,0,1]])
     return Mvp
 
-def load_model(model, scene, M,load_material=False):
-    
+def load_model(model, scene, M,load_material=False,load_texture=False):
+        
     screen_vertices=[]
     real_vertices=[]#把齐次坐标转回来
     for i in model.vertices:
@@ -75,6 +75,7 @@ def load_model(model, scene, M,load_material=False):
         real_vertices.append([i[0],i[1],i[2]])
     
     triangle_set=[]
+    uv_set=[]
 
     for count, i in enumerate(model.indices):
         scr_tri=ar([screen_vertices[idx-1] for idx in i]) 
@@ -83,13 +84,23 @@ def load_model(model, scene, M,load_material=False):
         single_triangle=Triangle(ori_tri,norm,scr_tri[0],scr_tri[1],scr_tri[2])
         triangle_set.append(single_triangle)
         
+        uv_indices=ar([model.uv_vertices[idx-1] for idx in model.uv_indices[count]])
+        uv_set.append(uv_indices)
+        
     if load_material:
         Triangle.Ka=ar(model.Ka)/model.illum
         Triangle.Kd=ar(model.Kd)/model.illum
         Triangle.Ks=ar(model.Ks)/model.illum
         
+    if load_texture and model.texture_name!=None:
+        Triangle.texture=model.texture
+        Triangle.u=model.u
+        Triangle.v=model.v
+        Triangle.load_texture=True
+        Triangle.uv_set=uv_set
         
-    return triangle_set
+        
+    return triangle_set,uv_set
 
             
                
@@ -101,10 +112,11 @@ def get_transform_matrix(scene):
     return M
 
 
-def shade(f_buffer,z_buffer,scene,triangle_set):
-    print(scene.width)
+def shade(f_buffer,z_buffer,scene,triangle_set,uv_set):
+    count=0
     for i in tqdm.tqdm(triangle_set):
-        i.update_buffer()
+        i.update_buffer(uv_set[count])
+        count+=1
         
     for i in range(scene.width):
         for j in range(scene.height):
@@ -112,19 +124,19 @@ def shade(f_buffer,z_buffer,scene,triangle_set):
                 scene.img.putpixel((i,j), (f_buffer[i][j][0],f_buffer[i][j][1],f_buffer[i][j][2]))
 
 def initial_scene(width=600,height=400,save_path="results/res1.png"):
-    Triangle.mode=1
+    Triangle.mode=0####################################################
     sc=Scene(width=width,height=height,save_path=save_path)
     return sc
 
 #@SSAA
-def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj"):
-    m=model.Model(model_path)
+def pipline(width,height,save_path="results/res1.png",model_path="model/box.obj",texture_name="model/barrel_side.png"):
+    m=model.Model(model_path,texture_name)
     sc=initial_scene(width=width,height=height,save_path=save_path)   
     M=get_transform_matrix(sc)#返回屏幕空间的顶点坐标，总的变换矩阵，z轴最小值
     sc.draw_xyz(M)
     
-    triangle_set=load_model(m,sc,M,load_material=True)  
-    shade(Object.f_buff,Object.z_buff,sc,triangle_set)  
+    triangle_set,uv_set=load_model(m,sc,M,load_material=False,load_texture=True)  
+    shade(Object.f_buff,Object.z_buff,sc,triangle_set,uv_set)  
     sc.show()
     return sc.img
     

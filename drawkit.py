@@ -24,11 +24,12 @@ class Object:
 
 class Triangle(Object):    
     kd=1
-    mode=1
+    mode=0
     p=50
     Kd=ar([.8,.3,.4])
     Ka=ar([.2,.2,.2])
     Ks=ar([.6,.6,.6])
+    load_texture=False
     
     def __init__(self,i,norm,vertice1=np.zeros(3),vertice2=np.zeros(3),vertice3=np.zeros(3)):#分别传入屏幕坐标的三个点
         if Triangle.mode==0:
@@ -36,7 +37,7 @@ class Triangle(Object):
         elif Triangle.mode==1:
             self.optimize_initial(i,norm,vertice1,vertice2,vertice3)
           
-    def update_buffer(self):
+    def update_buffer(self,uv):
         if Triangle.mode==0:
             for i in range(self.xmin,self.xmax):
                 for j in range(self.ymin,self.ymax):
@@ -46,21 +47,48 @@ class Triangle(Object):
             
                         if i>=Object.width or j>=Object.height or i<0 or j<0:    break
                         if depth<Object.z_buff[i][j]:
-                            Object.z_buff[i][j]=depth
-                            diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                            spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p))      
-                            Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+                            Object.z_buff[i][j]=depth     
+                            Object.f_buff[i][j]=self.shade_color(i,j,uv)
         
         elif Triangle.mode==1:
-            self.optimize_update_buffer()
+            self.optimize_update_buffer(uv)
             
-                            
-
+    def shade_color(self,i,j,uv):
+        if Triangle.load_texture==False:
+            diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
+            spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p))
+            color=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+            return color
+        else:
+            coord=self.get_uv(i,j,uv)
+            print((int(coord[0]*Triangle.u),int(coord[1]*Triangle.v)))
+            RGB=Triangle.texture.getpixel((int(coord[0]*Triangle.u),int(coord[1]*Triangle.v)))
+            Kd=ar([RGB[0]/255,RGB[1]/255,RGB[2]/255])
+            diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
+            spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p))
+            color=np.clip(0,1,Triangle.Ka+Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+            return color
+            
+                                     
+    def get_uv(self,i,j,uv):
+        coord=[]
+        a=self.a
+        b=self.b
+        c=self.c
+        for i in range(2):
+            #alpha=(-1*(i-b[0])*(c[1]-b[1])+(j-b[1])*(c[0]-b[0]))/(-1*(a[0]-b[0])*(c[1]-b[1])+(a[1]-b[1])*(c[0]-b[0]))
+            #beta=(-1*(i-c[0])*(a[1]-c[1])+(j-c[1])*(a[0]-c[0]))/(-1*(b[0]-c[0])*(a[1]-c[1])+(b[1]-c[1])*(a[0]-c[0]))
+            alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))
+            pos=alpha*uv[0][i]+beta*uv[1][i]+(1-alpha-beta)*uv[2][i]
+            coord.append(pos)
+            print("this is pos")
+            print(alpha,beta)
+        return np.clip(0,1,coord)
+    
     def get_depth_screen(self,i,j):
         alpha,beta=np.dot(ar([i-self.c[0],j-self.c[1]]),np.linalg.inv(ar([[self.a[0]-self.c[0],self.a[1]-self.c[1]],[self.b[0]-self.c[0],self.b[1]-self.c[1]]])))#
         return alpha*self.z1+beta*self.z2+(1-alpha-beta)*self.z3
-    def get_depth_appro(self):
-        return self.z_ave
+
     
     
     def get_vertice_light(self,n):#参考取值lambertian n=1,blinn-spec n=101,不能是偶数不然没法判断背面
@@ -100,7 +128,6 @@ class Triangle(Object):
     def optimize_initial(self,i,norm,a,b,c):
         vertice_set=[a,b,c]
         a,b,c=sorted(vertice_set,key=lambda k:k[0])
-        print(a,b,c)
         self.z1=a[2]
         self.z2=b[2]
         self.z3=c[2]
@@ -113,7 +140,7 @@ class Triangle(Object):
         self.ori=i
         self.norm=norm
         
-    def optimize_update_buffer(self):
+    def optimize_update_buffer(self,uv):
         b_continue=0
         b_dots=self.line2.draw_line()
         for count,i in enumerate(range(self.a[0],self.b[0])):
@@ -125,9 +152,7 @@ class Triangle(Object):
                 depth=self.get_depth_screen(i,j)
                 if depth<Object.z_buff[i][j]:
                         Object.z_buff[i][j]=depth
-                        diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                        spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p)) 
-                        Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+                        Object.f_buff[i][j]=self.shade_color(i,j,uv)
             
         for count,i in enumerate(range(self.b[0],self.c[0])):
             dots=self.line3.draw_line()
@@ -137,9 +162,7 @@ class Triangle(Object):
                 depth=self.get_depth_screen(i,j)
                 if depth<Object.z_buff[i][j]:
                         Object.z_buff[i][j]=depth
-                        diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
-                        spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p)) 
-                        Object.f_buff[i][j]=np.clip(0,1,Triangle.Ka+Triangle.Kd*diffuse_light_cos+Triangle.Ks*spect_light_cos)*255
+                        Object.f_buff[i][j]=self.shade_color(i,j,uv)
         
         
 class Line:

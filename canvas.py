@@ -37,12 +37,10 @@ class Scene:
         set_b=[ar([10,0,0,1]),ar([0,10,0,1]),ar([0,0,10,1])]
         color=[(255,0,0),(0,255,0),(0,0,255)]
         for i,v in enumerate(set_a):
-            print(set_a[i])
             start=np.dot(M, set_a[i])
             
             end=np.dot(M, set_b[i])
             a=ar([round(start[0]/start[3]),round(start[1]/start[3])])
-            print(a)
             b=ar([round(end[0]/end[3]),round(end[1]/end[3])])
             grid_line=Line(a,b)
             dots=grid_line.draw_line()
