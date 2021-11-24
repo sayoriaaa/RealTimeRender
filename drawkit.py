@@ -57,7 +57,8 @@ class Triangle(Object):
             xxj=round(Triangle.v*coord[1]-0.5)
             #print((int(coord[0]*Triangle.u),int(coord[1]*Triangle.v)))
             
-            RGB=Triangle.texture.getpixel((xxi%Triangle.u,xxj%Triangle.v))#P254
+            RGB=Triangle.texture.getpixel((xxi,xxj))#P254
+            
             Kd=ar([RGB[0]/255,RGB[1]/255,RGB[2]/255])
             diffuse_light_cos=(self.get_screen_interpolation(i,j,1))
             spect_light_cos=(self.get_screen_interpolation(i,j,Triangle.p))
@@ -67,9 +68,9 @@ class Triangle(Object):
                                      
     def get_uv(self,i,j,uv):
         coord=[]
-        for i in range(2):
+        for t in range(2):
             alpha,beta=self.get_interpolation_weight(i,j)
-            pos=alpha*uv[0][i]+beta*uv[1][i]+(1-alpha-beta)*uv[2][i]
+            pos=alpha*uv[0][t]+beta*uv[1][t]+(1-alpha-beta)*uv[2][t]
             coord.append(pos)
         return np.clip(0,1,coord)
     
@@ -147,8 +148,8 @@ class Triangle(Object):
             
                         if i>=Object.width or j>=Object.height or i<0 or j<0:    break
                         if depth<Object.z_buff[i][j]:
-                            Object.z_buff[i][j]=depth     
-                            Object.f_buff[i][j]=self.shade_color(i,j,uv)       
+                            Object.z_buff[i][j]=depth 
+                            Object.f_buff[i][j]=self.shade_color(i,j,uv)  
        
     def optimize_update_buffer(self,uv):
         b_continue=0
